@@ -1,0 +1,54 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Dec  9 16:26:15 2018
+
+@author: Administrator
+"""
+
+import random
+import pandas as pd
+
+
+#导入数据
+record_cs = pd.read_excel("C:/Users/Administrator.markov-PC/催收记录.xlsx",Sheetname="sheet1")
+summary = pd.read_excel("C:/Users/Administrator.markov-PC/2018核销统计1120.xlsx",Sheetname="Sheet1")
+#提取催收员名单
+list_csy=list(record_cs["催收员"].sort_values().value_counts().index)
+#查看下
+list_csy
+#给每个催收员编号，编号结果存入字典中
+dict_csy={}
+for i in range(10):
+    dict_csy[i]=list_csy[i]
+
+#检查下   
+#len(summary["催收员编号"].sort_values().value_counts())
+#提取有用信息列，催收员编号和催收日期均在excel中分别利用函数处理过
+out=summary[["催收员编号","催收日期","客户姓名","客户手机号"]]
+#复制一列，为了方便检查
+out["催收员编号1"]=out["催收员编号"]
+df1=pd.DataFrame(out["催收员编号1"])
+#将催收员编号用催收员姓名进行
+df1.replace(dict_csy,inplace=True)
+#对该列重新命名
+df1.rename(columns={"催收员编号1":"催收员姓名"},inplace=True)
+#将催收员姓名列并入原数据表
+out=pd.concat([out,df1],axis=1)
+#催收记录的语料库，里面是筛选出来的常见催收记录
+pool=pd.read_excel("C:/Users/Administrator.markov-PC/语料库.xlsx",Sheetname="Sheet1")
+#将这些预料存入列表中备用
+pool_list=list(pool["名字"].values)
+#给每位客户随机挑选催收记录
+list_detail=[]
+for i in range(len(out)):
+    k=random.randint(0,len(pool_list)-1)
+    list_detail.append(pool_list[k])
+    
+
+#整合进数据表
+out["催收记录"]=list_detail
+#查看下各条记录出现的次数，看看是否随机
+out["催收记录"].sort_values().value_counts()
+#对列的顺序按照模版进行调整
+out.reindex(columns=["催收员编号","催收员姓名","催收日期","催收记录","客户姓名","电话号码"])
+out.to_excel("处理完.xlsx")
